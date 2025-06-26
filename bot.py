@@ -5,6 +5,7 @@ import os
 import requests
 from telegram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from aiohttp import web  # додано
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
 CHAT_ID = int(os.getenv("CHAT_ID", "-4811736259"))  
@@ -75,6 +76,19 @@ async def check_air_alerts():
 async def check_air_alerts_wrapper():
     await check_air_alerts()
 
+# HTTP сервер
+async def handle(request):
+    return web.Response(text="Bot is running")
+
+async def start_http_server():
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8000)
+    await site.start()
+    logging.info("HTTP server started on port 8000")
+
 async def main():
     logging.basicConfig(level=logging.INFO)
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
@@ -85,11 +99,16 @@ async def main():
     scheduler.start()
     logging.info("🤖 Бот запущено...")
 
+    await asyncio.gather(
+        start_http_server(),
+        run_bot_loop()
+    )
+
+async def run_bot_loop():
     try:
         while True:
             await asyncio.sleep(60)
     except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()
         logging.info("Бот зупинено")
 
 if __name__ == '__main__':
