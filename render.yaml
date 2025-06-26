@@ -1,0 +1,7 @@
+services:
+  - type: worker
+    name: telegram-memory-bot
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: "python bot.py"
