@@ -5,7 +5,7 @@ import os
 import requests
 from telegram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiohttp import web  # додано
+from aiohttp import web  # HTTP сервер
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
 CHAT_ID = int(os.getenv("CHAT_ID", "-4811736259"))  
@@ -15,10 +15,8 @@ last_alert_status = None
 
 async def send_minute_of_silence():
     now = datetime.datetime.now()
-
     invasion_start = datetime.datetime(2022, 2, 24)
     days_since_invasion = (now - invasion_start).days + 1
-
     crimea_occupation_start = datetime.datetime(2014, 2, 20)
     days_since_crimea = (now - crimea_occupation_start).days + 1
 
@@ -76,7 +74,7 @@ async def check_air_alerts():
 async def check_air_alerts_wrapper():
     await check_air_alerts()
 
-# HTTP сервер
+# HTTP-сервер
 async def handle(request):
     return web.Response(text="Bot is running")
 
@@ -91,12 +89,13 @@ async def start_http_server():
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
+    logging.info("🔁 Код оновлено та перезапущено")  # <-- ДОДАНО
 
+    scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=00)
     scheduler.add_job(check_air_alerts_wrapper, 'interval', seconds=60)
-
     scheduler.start()
+
     logging.info("🤖 Бот запущено...")
 
     await asyncio.gather(
