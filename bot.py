@@ -5,7 +5,7 @@ import os
 import requests
 from telegram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiohttp import web  # HTTP сервер
+from aiohttp import web  
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
 CHAT_ID = int(os.getenv("CHAT_ID", "-4811736259"))  
@@ -35,41 +35,48 @@ async def send_minute_of_silence():
 async def check_air_alerts():
     global last_alert_status
     try:
-        r = requests.get("https://alerts.com.ua/api/states/14", timeout=10)
+        r = requests.get("https://alerts.com.ua/api/states", timeout=10)
         if r.status_code == 200 and r.text.strip():
             data = r.json()
-            status = data.get("alert")
+            states = data.get("states", [])
+            odessa = next((region for region in states if region["id"] == 14), None)
 
-            if last_alert_status != status:
-                last_alert_status = status
-                if status:
-                    await bot.send_message(
-                        chat_id=CHAT_ID,
-                        text=(
-                            "🚨 *Увага! Повітряна тривога у Львівській області!*\n\n"
-                            "Просимо всіх негайно пройти до найближчого укриття.\n"
-                            "Дотримуйтесь правил безпеки та не нехтуйте сигналами оповіщення.\n\n"
-                            "Слава Україні! 🇺🇦"
-                        ),
-                        parse_mode='Markdown'
-                    )
-                    logging.info("Відправлено повідомлення про повітряну тривогу")
-                else:
-                    await bot.send_message(
-                        chat_id=CHAT_ID,
-                        text=(
-                            "✅ *Відбій повітряної тривоги у Львівській області!*\n\n"
-                            "Наразі загроза з повітря відсутня.\n"
-                            "Дякуємо всім за пильність та дотримання заходів безпеки.\n\n"
-                            "Разом до перемоги! 💙💛"
-                        ),
-                        parse_mode='Markdown'
-                    )
-                    logging.info("Відправлено повідомлення про відбій тривоги")
+            if odessa:
+                status = odessa.get("alert", False)
+
+                if last_alert_status != status:
+                    last_alert_status = status
+                    if status:
+                        await bot.send_message(
+                            chat_id=CHAT_ID,
+                            text=(
+                                "🚨 *Увага! Повітряна тривога у Одеській області!*\n\n"
+                                "Просимо всіх негайно пройти до найближчого укриття.\n"
+                                "Дотримуйтесь правил безпеки та не нехтуйте сигналами оповіщення.\n\n"
+                                "Слава Україні! 🇺🇦"
+                            ),
+                            parse_mode='Markdown'
+                        )
+                        logging.info("Відправлено повідомлення про повітряну тривогу")
+                    else:
+                        await bot.send_message(
+                            chat_id=CHAT_ID,
+                            text=(
+                                "✅ *Відбій повітряної тривоги у Одеській області!*\n\n"
+                                "Наразі загроза з повітря відсутня.\n"
+                                "Дякуємо всім за пильність та дотримання заходів безпеки.\n\n"
+                                "Разом до перемоги! 💙💛"
+                            ),
+                            parse_mode='Markdown'
+                        )
+                        logging.info("Відправлено повідомлення про відбій тривоги")
+            else:
+                logging.warning("Не знайдено інформації про Одеську область")
         else:
             logging.warning(f"Помилка API або пустий вміст, status_code={r.status_code}")
     except Exception as e:
         logging.error(f"[ПОМИЛКА] Перевірка тривоги: {e}", exc_info=True)
+
 
 async def check_air_alerts_wrapper():
     await check_air_alerts()
@@ -89,7 +96,7 @@ async def start_http_server():
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    logging.info("🔁 Код оновлено та перезапущено")  # <-- ДОДАНО
+    logging.info("🔁 Код оновлено та перезапущено")  
 
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=00)
