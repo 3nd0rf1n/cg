@@ -169,13 +169,13 @@ async def handle_schedule_choice(update: Update, context: ContextTypes.DEFAULT_T
 async def main():
     logging.basicConfig(level=logging.INFO)
 
+    app = Application.builder().token(BOT_TOKEN).build()
+
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
-    scheduler.add_job(lambda: send_minute_of_silence(app), 'cron', hour=9, minute=0)
-    scheduler.add_job(lambda: check_air_alerts_wrapper(app), 'interval', seconds=60)
+    scheduler.add_job(lambda: asyncio.create_task(send_minute_of_silence(app)), 'cron', hour=9, minute=0)
+    scheduler.add_job(lambda: asyncio.create_task(check_air_alerts_wrapper(app)), 'interval', seconds=60)
     scheduler.start()
 
-    global app
-    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("rozklad", send_schedule_buttons))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_schedule_choice))
 
