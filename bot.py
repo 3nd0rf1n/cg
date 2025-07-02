@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
-BOT_TOKEN = os.getenv("7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 
 bot = Bot(token=BOT_TOKEN)
