@@ -4,7 +4,7 @@ import logging
 import os
 import requests
 from collections import defaultdict
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Bot
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
@@ -12,12 +12,11 @@ from aiohttp import web
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 
-bot = Bot(token=BOT_TOKEN)
 last_alert_status = None
 waiting_for_schedule_choice = set()
 command_usage = defaultdict(lambda: [None, 0])  # user_id: [date, count]
 
-async def send_startup_notification():
+async def send_startup_notification(application: Application):
     message = (
         "🇺🇦 *Шановні мешканці Червонограда та Шептицького!*\n\n"
         "З радістю повідомляємо, що інформативний Telegram-бот *працює для вас цілодобово* 💪\n"
@@ -37,9 +36,9 @@ async def send_startup_notification():
         "З повагою,\n"
         "*Ваш помічник з безпеки та транспорту 💙💛*"
     )
-    await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
+    await application.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
 
-async def send_minute_of_silence():
+async def send_minute_of_silence(application: Application):
     now = datetime.datetime.now()
     invasion_start = datetime.datetime(2022, 2, 24)
     days_since_invasion = (now - invasion_start).days + 1
@@ -53,9 +52,9 @@ async def send_minute_of_silence():
         f"📅 Сьогодні — {days_since_invasion}-й день від початку повномасштабного вторгнення.\n"
         f"📅 Минуло {days_since_crimea} днів з моменту початку тимчасової окупації Автономної Республіки Крим."
     )
-    await bot.send_message(chat_id=CHAT_ID, text=message)
+    await application.bot.send_message(chat_id=CHAT_ID, text=message)
 
-async def check_air_alerts():
+async def check_air_alerts(application: Application):
     global last_alert_status
     try:
         r = requests.get("https://alerts.com.ua/api/states", timeout=10)
@@ -68,7 +67,7 @@ async def check_air_alerts():
                 if last_alert_status != status:
                     last_alert_status = status
                     if status:
-                        await bot.send_message(
+                        await application.bot.send_message(
                             chat_id=CHAT_ID,
                             text=(
                                 "🚨 *Увага! Повітряна тривога у Львівській області!*\n\n"
@@ -79,7 +78,7 @@ async def check_air_alerts():
                             parse_mode='Markdown'
                         )
                     else:
-                        await bot.send_message(
+                        await application.bot.send_message(
                             chat_id=CHAT_ID,
                             text=(
                                 "✅ *Відбій повітряної тривоги у Львівській області!*\n\n"
@@ -92,8 +91,8 @@ async def check_air_alerts():
     except Exception as e:
         logging.error(f"[ПОМИЛКА] Перевірка тривоги: {e}", exc_info=True)
 
-async def check_air_alerts_wrapper():
-    await check_air_alerts()
+async def check_air_alerts_wrapper(application: Application):
+    await check_air_alerts(application)
 
 async def handle(request):
     return web.Response(text="Bot is running")
@@ -171,22 +170,23 @@ async def main():
     logging.basicConfig(level=logging.INFO)
 
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
-    scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=0)
-    scheduler.add_job(check_air_alerts_wrapper, 'interval', seconds=60)
+    scheduler.add_job(lambda: send_minute_of_silence(app), 'cron', hour=9, minute=0)
+    scheduler.add_job(lambda: check_air_alerts_wrapper(app), 'interval', seconds=60)
     scheduler.start()
 
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("rozklad", send_schedule_buttons))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_schedule_choice))
+    global app
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("rozklad", send_schedule_buttons))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_schedule_choice))
 
-    await application.initialize()
-    await application.start()
+    await app.initialize()
+    await app.start()
 
-    await send_startup_notification()
+    await send_startup_notification(app)
 
     http_task = asyncio.create_task(start_http_server())
 
-    await application.run_polling()
+    await app.run_polling()
 
     await http_task
 
