@@ -168,15 +168,19 @@ async def main():
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=0)
     scheduler.add_job(check_air_alerts_wrapper, 'interval', seconds=60)
     scheduler.start()
+
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("rozklad", send_schedule_buttons))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_schedule_choice))
+
     await application.initialize()
     await application.start()
     await send_startup_notification()
+
     http_task = asyncio.create_task(start_http_server())
-    polling_task = asyncio.create_task(application.updater.start_polling())
-    await asyncio.gather(http_task, polling_task)
+    await application.run_polling()
+
+    await http_task  # если http сервер вдруг завершится
 
 if __name__ == '__main__':
     asyncio.run(main())
