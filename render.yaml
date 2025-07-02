@@ -3,5 +3,7 @@ services:
     name: telegram-memory-bot
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python bot.py"
+    buildCommand: |
+      pip uninstall telegram python-telegram-bot -y
+      pip install -r requirements.txt
+    startCommand: python bot.py

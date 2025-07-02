@@ -157,7 +157,6 @@ async def handle_schedule_choice(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text("⚠️ Невідомий вибір.", reply_markup=ReplyKeyboardRemove())
         return
 
-    # Форматируем в колонки по 5 времени в строке
     lines = [f"🕒 {time}" for time in schedule]
     cols = 5
     rows = [lines[i:i+cols] for i in range(0, len(lines), cols)]
@@ -186,9 +185,9 @@ async def main():
     await send_startup_notification()
 
     http_task = asyncio.create_task(start_http_server())
-    await application.run_polling()
+    polling_task = asyncio.create_task(application.run_polling())
 
-    await http_task
+    await asyncio.gather(http_task, polling_task)
 
 if __name__ == '__main__':
     asyncio.run(main())
