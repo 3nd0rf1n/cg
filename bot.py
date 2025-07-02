@@ -10,7 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
 BOT_TOKEN = os.getenv("7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
-CHAT_ID = int(os.getenv("-1001383482902"))
+CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 
 bot = Bot(token=BOT_TOKEN)
 last_alert_status = None
