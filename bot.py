@@ -15,7 +15,7 @@ CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 bot = Bot(token=BOT_TOKEN)
 last_alert_status = None
 waiting_for_schedule_choice = set()
-command_usage = defaultdict(lambda: [None, 0])
+command_usage = defaultdict(lambda: [None, 0])  # user_id: [date, count]
 
 async def send_startup_notification():
     message = (
@@ -119,6 +119,7 @@ async def send_schedule_buttons(update: Update, context: ContextTypes.DEFAULT_TY
             await update.message.reply_text("⚠️ Ви вже використали цю команду 2 рази сьогодні.")
             return
         command_usage[user_id][1] += 1
+
     keyboard = [["🚍 Шептицький → Львів"], ["🚍 Львів → Шептицький"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     waiting_for_schedule_choice.add(update.message.chat_id)
@@ -129,10 +130,12 @@ async def handle_schedule_choice(update: Update, context: ContextTypes.DEFAULT_T
     if chat_id not in waiting_for_schedule_choice:
         return
     waiting_for_schedule_choice.remove(chat_id)
+
     text = update.message.text
     waiting_message = await update.message.reply_text("⏳ Зачекайте, шукаю розклад…")
     await asyncio.sleep(2)
     await context.bot.delete_message(chat_id=chat_id, message_id=waiting_message.message_id)
+
     if text == "🚍 Шептицький → Львів":
         schedule = [
             "05:50", "06:05", "06:15", "06:37", "06:49", "07:10", "07:37", "08:09", "08:41", "09:04",
@@ -153,10 +156,13 @@ async def handle_schedule_choice(update: Update, context: ContextTypes.DEFAULT_T
     else:
         await update.message.reply_text("⚠️ Невідомий вибір.", reply_markup=ReplyKeyboardRemove())
         return
+
+    # Форматируем в колонки по 5 времени в строке
     lines = [f"🕒 {time}" for time in schedule]
     cols = 5
     rows = [lines[i:i+cols] for i in range(0, len(lines), cols)]
     response = "\n".join(["    ".join(row) for row in rows])
+
     await update.message.reply_text(
         f"✅ Ви обрали напрямок: 🚍 {direction}\n\n🚌 Відправлення:\n{response}",
         reply_markup=ReplyKeyboardRemove()
@@ -164,6 +170,7 @@ async def handle_schedule_choice(update: Update, context: ContextTypes.DEFAULT_T
 
 async def main():
     logging.basicConfig(level=logging.INFO)
+
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=0)
     scheduler.add_job(check_air_alerts_wrapper, 'interval', seconds=60)
@@ -175,12 +182,13 @@ async def main():
 
     await application.initialize()
     await application.start()
+
     await send_startup_notification()
 
     http_task = asyncio.create_task(start_http_server())
     await application.run_polling()
 
-    await http_task  # если http сервер вдруг завершится
+    await http_task
 
 if __name__ == '__main__':
     asyncio.run(main())
