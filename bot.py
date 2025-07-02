@@ -9,8 +9,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
-CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
+BOT_TOKEN = os.getenv("7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
+CHAT_ID = int(os.getenv("-1001383482902"))
 
 bot = Bot(token=BOT_TOKEN)
 last_alert_status = None
@@ -185,9 +185,10 @@ async def main():
     await send_startup_notification()
 
     http_task = asyncio.create_task(start_http_server())
-    polling_task = asyncio.create_task(application.run_polling())
 
-    await asyncio.gather(http_task, polling_task)
+    await application.run_polling()
+
+    await http_task
 
 if __name__ == '__main__':
     asyncio.run(main())
