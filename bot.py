@@ -106,28 +106,59 @@ async def start_web():
 async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
-    short_instruction = (
-        "Щоб отримати розклад маршруток, перевірте особисті повідомлення (ЛС). "
-        "Там буде детальна інструкція та кнопки для вибору напрямку."
+
+    # Якщо команда викликана не в особистих — ввічливо нагадаємо
+    if update.effective_chat.type != "private":
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "ℹ️ Щоб отримати розклад маршруток, напишіть боту в особисті повідомлення 🤖\n\n"
+                "Ця команда працює тільки в особистому чаті з ботом — це потрібно, щоб він міг надіслати вам розклад."
+            )
+        )
+        return
+
+    # Коротке пояснення
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=(
+            "✅ Ви звернулись до розкладу маршруток.\n\n"
+            "📩 Інструкція та вибір напрямку будуть у цьому чаті."
+        )
     )
-    await context.bot.send_message(chat_id=chat_id, text=short_instruction)
+
+    # Перевірка обмежень (2 рази/день)
     today = datetime.date.today()
     last_date, count = command_usage[user_id]
     if last_date != today:
         command_usage[user_id] = [today, 1]
     elif count >= 2:
-        await context.bot.send_message(chat_id=user_id, text="⚠️ Ви вже використали цю команду 2 рази сьогодні.")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="⚠️ Ви вже використали цю команду 2 рази сьогодні.\nЗавітайте завтра 🕒"
+        )
         return
     else:
         command_usage[user_id][1] += 1
+
+    # Відправка клавіатури з вибором
     keyboard = [["🚍 Шептицький → Львів"], ["🚍 Львів → Шептицький"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-    long_instruction = "🚌 Виберіть напрямок маршрутки, щоб отримати розклад:"
     try:
-        await context.bot.send_message(chat_id=user_id, text=long_instruction, reply_markup=reply_markup)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🚌 Виберіть напрямок маршрутки, щоб отримати актуальний розклад:",
+            reply_markup=reply_markup
+        )
     except Exception:
-        await context.bot.send_message(chat_id=chat_id,
-            text="⚠️ Щоб отримати розклад у особистих повідомленнях, напишіть боту хоча б одне повідомлення.")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "⚠️ Щоб отримати розклад, спочатку напишіть боту хоча б одне повідомлення в особисті.\n"
+                "Telegram не дозволяє ботам починати діалог першими."
+            )
+        )
+
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
