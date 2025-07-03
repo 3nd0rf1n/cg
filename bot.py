@@ -188,23 +188,20 @@ async def main():
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=0)
     scheduler.add_job(check_air_alerts, 'interval', seconds=60)
     scheduler.start()
+
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("rozklad", rozklad_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+
     asyncio.create_task(start_web())
     asyncio.create_task(send_startup_notification())
+
     logging.info("✅ Бот запускається...")
     await application.run_polling()
 
+
 if __name__ == '__main__':
     import asyncio
+    asyncio.run(main())
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("❌ Бот зупинено вручну")
-    finally:
-        loop.close()
 
