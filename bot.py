@@ -15,8 +15,8 @@ from telegram.ext import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
-CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = int(os.getenv("CHAT_ID"))
 
 bot = Bot(token=BOT_TOKEN)
 command_usage = defaultdict(lambda: [None, 0])
@@ -128,37 +128,30 @@ async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ["🚍 Львів → Шептицький"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-
     long_instruction = "🚌 Виберіть напрямок маршрутки, щоб отримати розклад:"
 
     try:
         await context.bot.send_message(chat_id=user_id, text=long_instruction, reply_markup=reply_markup)
     except Exception:
         await context.bot.send_message(chat_id=chat_id,
-                                       text="⚠️ Щоб отримати розклад у особистих повідомленнях, напишіть боту хоча б одне повідомлення.")
+            text="⚠️ Щоб отримати розклад у особистих повідомленнях, напишіть боту хоча б одне повідомлення.")
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
     text = update.message.text
-
     if text == "🚍 Шептицький → Львів":
-        schedule = [
-            "05:50", "06:05", "06:15", "06:37", "06:49", "07:10", "07:37", "08:09",
+        schedule = ["05:50", "06:05", "06:15", "06:37", "06:49", "07:10", "07:37", "08:09",
             "08:41", "09:04", "09:37", "09:53", "10:15", "10:25", "10:41", "11:13",
             "11:37", "12:09", "12:41", "12:57", "13:29", "14:01", "14:41", "15:15",
             "15:29", "15:45", "16:09", "16:37", "16:57", "17:25", "17:37", "18:01",
-            "19:01", "19:40", "21:00"
-        ]
+            "19:01", "19:40", "21:00"]
         direction = "Шептицький → Львів"
     elif text == "🚍 Львів → Шептицький":
-        schedule = [
-            "06:00", "06:15", "06:50", "06:50", "07:10", "07:30", "07:40", "08:00",
+        schedule = ["06:00", "06:15", "06:50", "06:50", "07:10", "07:30", "07:40", "08:00",
             "08:30", "09:00", "09:32", "10:04", "10:20", "10:25", "11:32", "12:00",
             "12:04", "12:36", "12:52", "13:10", "13:24", "13:30", "13:40", "13:55",
             "14:12", "14:28", "14:30", "14:52", "15:16", "15:48", "15:50", "16:20",
             "17:00", "17:14", "17:24", "17:30", "18:18", "18:32", "18:52", "19:15",
-            "20:05", "20:15", "20:50"
-        ]
+            "20:05", "20:15", "20:50"]
         direction = "Львів → Шептицький"
     else:
         return
@@ -175,7 +168,6 @@ async def main():
     scheduler.start()
 
     application = Application.builder().token(BOT_TOKEN).build()
-
     application.add_handler(CommandHandler("rozklad", rozklad_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
