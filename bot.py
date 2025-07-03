@@ -1,3 +1,4 @@
+# bot.py
 import asyncio
 import datetime
 import logging
@@ -188,16 +189,12 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     asyncio.create_task(start_web())
+
     asyncio.create_task(send_startup_notification())
 
     logging.info("✅ Бот запускається...")
 
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-
-    while True:
-        await asyncio.sleep(3600)
+    await application.run_polling()
 
 
 if __name__ == '__main__':
