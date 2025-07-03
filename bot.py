@@ -1,4 +1,3 @@
-# bot.py
 import asyncio
 import datetime
 import logging
@@ -23,7 +22,6 @@ bot = Bot(token=BOT_TOKEN)
 command_usage = defaultdict(lambda: [None, 0])
 last_alert_status = None
 
-
 async def send_startup_notification():
     message = (
         "🇺🇦 *Шановні мешканці Червонограда та Шептицького!*\n\n"
@@ -45,7 +43,6 @@ async def send_startup_notification():
     )
     await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
 
-
 async def send_minute_of_silence():
     now = datetime.datetime.now()
     invasion_start = datetime.datetime(2022, 2, 24)
@@ -61,7 +58,6 @@ async def send_minute_of_silence():
         f"📅 Минуло {days_since_crimea} днів з моменту початку тимчасової окупації Автономної Республіки Крим."
     )
     await bot.send_message(chat_id=CHAT_ID, text=message)
-
 
 async def check_air_alerts():
     global last_alert_status
@@ -93,10 +89,8 @@ async def check_air_alerts():
     except Exception as e:
         logging.error(f"[ПОМИЛКА] Перевірка тривоги: {e}", exc_info=True)
 
-
 async def handle(request):
     return web.Response(text="Bot is running")
-
 
 async def start_web():
     app = web.Application()
@@ -108,7 +102,6 @@ async def start_web():
     await site.start()
     while True:
         await asyncio.sleep(3600)
-
 
 async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -144,7 +137,6 @@ async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id,
                                        text="⚠️ Щоб отримати розклад у особистих повідомленнях, напишіть боту хоча б одне повідомлення.")
 
-
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text
@@ -174,7 +166,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     times = "\n".join([f"🕒 {t}" for t in schedule])
     await update.message.reply_text(f"✅ Ви обрали напрямок: {direction}\n\n🚌 Відправлення:\n{times}")
 
-
 async def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -189,16 +180,17 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     asyncio.create_task(start_web())
-
     asyncio.create_task(send_startup_notification())
 
     logging.info("✅ Бот запускається...")
 
     await application.run_polling()
 
-
 if __name__ == '__main__':
+    import asyncio
     try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
         asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("❌ Бот зупинено вручну")
+    else:
+        loop.create_task(main())
