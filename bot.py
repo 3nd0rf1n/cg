@@ -15,7 +15,7 @@ CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 bot = Bot(token=BOT_TOKEN)
 last_alert_status = None
 waiting_for_schedule_choice = set()
-command_usage = defaultdict(lambda: [None, 0]) 
+command_usage = defaultdict(lambda: [None, 0])
 
 async def send_startup_notification():
     message = (
@@ -184,6 +184,7 @@ async def main():
 
     await send_startup_notification()
 
+    # Запускаем веб-сервер и бота параллельно
     await asyncio.gather(
         application.run_polling(),
         start_http_server()
@@ -191,8 +192,6 @@ async def main():
 
 if __name__ == '__main__':
     try:
-        loop = asyncio.get_event_loop()
-        loop.create_task(main())
-        loop.run_forever()
+        asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         print("❌ Бот зупинено вручну")

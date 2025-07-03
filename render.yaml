@@ -6,8 +6,8 @@ services:
     startCommand: "python bot.py"
     envVars:
       - key: BOT_TOKEN
-        value: 7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM
+        value: "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM"
       - key: CHAT_ID
         value: "-1001234567890"
     build:
-      pythonVersion: 3.10.13
+      pythonVersion: 3.11.8
