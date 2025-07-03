@@ -17,7 +17,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7450692138:AAHiERBibay9XI56FhpSwFFclfKZmZNWoVM")
-CHAT_ID = int(os.getenv("CHAT_ID", "-4811736259"))
+CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 
 bot = Bot(token=BOT_TOKEN)
 command_usage = defaultdict(lambda: [None, 0])
