@@ -4,15 +4,11 @@ import logging
 import os
 import requests
 from collections import defaultdict
-from telegram import ReplyKeyboardMarkup, Update, Bot
-from telegram.ext import (
-    Application,
-    ContextTypes,
-    MessageHandler,
-    filters,
-)
+from telegram import Bot
+from telegram.ext import Application
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
+import nest_asyncio
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID"))
@@ -101,28 +97,6 @@ async def start_web():
     while True:
         await asyncio.sleep(3600)
 
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if text == "🚍 Шептицький → Львів":
-        schedule = ["05:50", "06:05", "06:15", "06:37", "06:49", "07:10", "07:37", "08:09",
-            "08:41", "09:04", "09:37", "09:53", "10:15", "10:25", "10:41", "11:13",
-            "11:37", "12:09", "12:41", "12:57", "13:29", "14:01", "14:41", "15:15",
-            "15:29", "15:45", "16:09", "16:37", "16:57", "17:25", "17:37", "18:01",
-            "19:01", "19:40", "21:00"]
-        direction = "Шептицький → Львів"
-    elif text == "🚍 Львів → Шептицький":
-        schedule = ["06:00", "06:15", "06:50", "06:50", "07:10", "07:30", "07:40", "08:00",
-            "08:30", "09:00", "09:32", "10:04", "10:20", "10:25", "11:32", "12:00",
-            "12:04", "12:36", "12:52", "13:10", "13:24", "13:30", "13:40", "13:55",
-            "14:12", "14:28", "14:30", "14:52", "15:16", "15:48", "15:50", "16:20",
-            "17:00", "17:14", "17:24", "17:30", "18:18", "18:32", "18:52", "19:15",
-            "20:05", "20:15", "20:50"]
-        direction = "Львів → Шептицький"
-    else:
-        return
-    times = "\n".join([f"🕒 {t}" for t in schedule])
-    await update.message.reply_text(f"✅ Ви обрали напрямок: {direction}\n\n🚌 Відправлення:\n{times}")
-
 async def main():
     logging.basicConfig(level=logging.INFO)
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
@@ -131,7 +105,6 @@ async def main():
     scheduler.start()
 
     application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     asyncio.create_task(start_web())
     asyncio.create_task(send_startup_notification())
@@ -140,4 +113,5 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    nest_asyncio.apply()
+    asyncio.get_event_loop().run_until_complete(main())
