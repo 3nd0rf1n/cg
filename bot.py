@@ -106,13 +106,11 @@ async def start_web():
 async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
-
     short_instruction = (
         "Щоб отримати розклад маршруток, перевірте особисті повідомлення (ЛС). "
         "Там буде детальна інструкція та кнопки для вибору напрямку."
     )
     await context.bot.send_message(chat_id=chat_id, text=short_instruction)
-
     today = datetime.date.today()
     last_date, count = command_usage[user_id]
     if last_date != today:
@@ -122,14 +120,9 @@ async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     else:
         command_usage[user_id][1] += 1
-
-    keyboard = [
-        ["🚍 Шептицький → Львів"],
-        ["🚍 Львів → Шептицький"]
-    ]
+    keyboard = [["🚍 Шептицький → Львів"], ["🚍 Львів → Шептицький"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     long_instruction = "🚌 Виберіть напрямок маршрутки, щоб отримати розклад:"
-
     try:
         await context.bot.send_message(chat_id=user_id, text=long_instruction, reply_markup=reply_markup)
     except Exception:
@@ -155,34 +148,23 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         direction = "Львів → Шептицький"
     else:
         return
-
     times = "\n".join([f"🕒 {t}" for t in schedule])
     await update.message.reply_text(f"✅ Ви обрали напрямок: {direction}\n\n🚌 Відправлення:\n{times}")
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
     scheduler.add_job(send_minute_of_silence, 'cron', hour=9, minute=0)
     scheduler.add_job(check_air_alerts, 'interval', seconds=60)
     scheduler.start()
-
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("rozklad", rozklad_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-
     asyncio.create_task(start_web())
     asyncio.create_task(send_startup_notification())
-
     logging.info("✅ Бот запускається...")
-
     await application.run_polling()
 
 if __name__ == '__main__':
     import asyncio
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        asyncio.run(main())
-    else:
-        loop.create_task(main())
+    asyncio.run(main())
