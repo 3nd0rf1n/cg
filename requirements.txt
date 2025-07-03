@@ -1,5 +1,5 @@
-python-telegram-bot==20.3
-aiohttp==3.8.4
-apscheduler==3.10.1
-requests==2.31.0
-nest_asyncio==1.5.6
+python-telegram-bot==20.8
+aiohttp=
+apscheduler
+requests
+nest_asyncio
