@@ -4,11 +4,10 @@ import logging
 import os
 import requests
 from collections import defaultdict
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
+from telegram import ReplyKeyboardMarkup, Update, Bot
 from telegram.ext import (
     Application,
     CommandHandler,
-    CallbackQueryHandler,
     ContextTypes,
     MessageHandler,
     filters,
@@ -22,6 +21,7 @@ CHAT_ID = int(os.getenv("CHAT_ID", "-1001383482902"))
 bot = Bot(token=BOT_TOKEN)
 command_usage = defaultdict(lambda: [None, 0])
 last_alert_status = None
+
 
 async def send_startup_notification():
     message = (
@@ -44,6 +44,7 @@ async def send_startup_notification():
     )
     await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
 
+
 async def send_minute_of_silence():
     now = datetime.datetime.now()
     invasion_start = datetime.datetime(2022, 2, 24)
@@ -59,6 +60,7 @@ async def send_minute_of_silence():
         f"📅 Минуло {days_since_crimea} днів з моменту початку тимчасової окупації Автономної Республіки Крим."
     )
     await bot.send_message(chat_id=CHAT_ID, text=message)
+
 
 async def check_air_alerts():
     global last_alert_status
@@ -90,16 +92,22 @@ async def check_air_alerts():
     except Exception as e:
         logging.error(f"[ПОМИЛКА] Перевірка тривоги: {e}", exc_info=True)
 
+
 async def handle(request):
     return web.Response(text="Bot is running")
+
 
 async def start_web():
     app = web.Application()
     app.add_routes([web.get('/', handle)])
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 8000)))
+    port = int(os.getenv("PORT", 8000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
+    while True:
+        await asyncio.sleep(3600)
+
 
 async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -125,18 +133,16 @@ async def rozklad_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ["🚍 Шептицький → Львів"],
         ["🚍 Львів → Шептицький"]
     ]
-    from telegram import ReplyKeyboardMarkup
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
-    long_instruction = (
-        "🚌 Виберіть напрямок маршрутки, щоб отримати розклад:"
-    )
+    long_instruction = "🚌 Виберіть напрямок маршрутки, щоб отримати розклад:"
 
     try:
         await context.bot.send_message(chat_id=user_id, text=long_instruction, reply_markup=reply_markup)
     except Exception:
         await context.bot.send_message(chat_id=chat_id,
                                        text="⚠️ Щоб отримати розклад у особистих повідомленнях, напишіть боту хоча б одне повідомлення.")
+
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -167,6 +173,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     times = "\n".join([f"🕒 {t}" for t in schedule])
     await update.message.reply_text(f"✅ Ви обрали напрямок: {direction}\n\n🚌 Відправлення:\n{times}")
 
+
 async def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -176,11 +183,12 @@ async def main():
     scheduler.start()
 
     application = Application.builder().token(BOT_TOKEN).build()
+
     application.add_handler(CommandHandler("rozklad", rozklad_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    # Запускаємо вебсервер (для Render)
     asyncio.create_task(start_web())
+    asyncio.create_task(send_startup_notification())
 
     logging.info("✅ Бот запускається...")
 
@@ -188,8 +196,12 @@ async def main():
     await application.start()
     await application.updater.start_polling()
 
+    while True:
+        await asyncio.sleep(3600)
+
+
 if __name__ == '__main__':
-    import nest_asyncio
-    nest_asyncio.apply()
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        print("❌ Бот зупинено вручну")
